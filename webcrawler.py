@@ -8,15 +8,21 @@ INPUT_URL = 'http://www.bitshift-dynamics.de/'
 
 class Page:
     def __init__(self, URL):
-        # self.URL = URL
-        # self.BASE_URL = urlparse.urlparse(URL).netloc
+        self.URL = URL
+        self.BASE_URL = urlparse.urlparse(URL).netloc
         self.mail = set()
-        # self.http = set()
-        # self.http_ext = set()
+        self.httpList = set()
+        self.httpExtList = set()
 
-    def parseURL(self, URL):
-        http_result = set()
-        BASE_URL = urlparse.urlparse(URL).netloc
+    def parse(self, urlList):
+        for link in urlList:
+            if link is not in self.httpList:
+                print link
+                self.httpList.add(link)
+
+
+    def getUrlSchemeList(self, URL):
+        scheme = list()
 
         # HTTP request
         res = requests.get(URL)
@@ -38,30 +44,30 @@ class Page:
             if a == None:
                 continue
 
-            pr = urlparse.urlparse(a)
+            scheme.append (urlparse.urlparse(a))
+        return scheme
 
-            if pr.scheme == 'mailto':
-                self.mail.add(pr.path)
-            elif (pr.netloc == BASE_URL or pr.netloc == '') and \
-                (pr.scheme == 'http' or pr.scheme == 'https'):
-                http_result.add(pr.path)
-            # elif pr.netloc != BASE_URL and (pr.scheme == 'http' or pr.scheme == 'https'):
-                # self.http_ext.add(pr.netloc + pr.path)
-            # # else
-                # # skip
+    def getEmail(self, schemeList):
+        for scheme in schemeList:
+            if scheme.scheme == 'mailto':
+                self.mail.add(scheme.path)
 
+    def getUrl(self, schemeList):
+        for scheme in schemeList:
+            if (scheme.netloc == BASE_URL or scheme.netloc == '') and \
+               (scheme.scheme == 'http' or scheme.scheme == 'https'):
+                self.httpList.add(scheme.path)
 
-    def parse_rec(self, URL):
-
+    def getExtUrl(self, schemeList):
+        for scheme in schemeList:
+            if scheme.netloc != BASE_URL and (scheme.scheme == 'http' or scheme.scheme == 'https'):
+                self.httpExtList.add(scheme.netloc + scheme.path)
 
 def main():
     p = Page(INPUT_URL)
-    p.parse()
+    p.parseURL()
     print p.mail
     print p.http
 
-
 if __name__ == "__main__":
     main()
-
-
