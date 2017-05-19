@@ -1,4 +1,19 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""Webcrawler for rating web pages
+
+This module visits webpages recursively and is juggeling with the content.
+
+Handling the content:
+    * obtain all E-Mail addresses published on the webpage
+    * count the words and sort them
+    * use an matching algorithm to rate the page
+
+Todo:
+    * count the words on every page and store them in a list of tuples
+    * find a matching algorithm and run it against the word list
+"""
+
 import requests
 import bs4
 import urlparse
@@ -7,64 +22,91 @@ INPUT_URL = 'http://www.duerrdental.com'
 # INPUT_URL = 'http://www.bitshift-dynamics.de/'
 # INPUT_URL = 'http://chris-maier.com'
 
-class Page:
-    def __init__(self, URL):
-        # self.URL = URL
-        self.BASE_URL = urlparse.urlparse(URL).netloc
+class Crawler:
+    """This class crawles the web page."""
+
+    def __init__(self, url):
+        """Ctor - Setup the basic variables."""
+        self.URL = url
+        self.BASE_URL = urlparse.urlparse(url).netloc
         self.mail = set()
         self.httpList = set()
         self.httpExtList = set()
-        self.count = 0
 
-    def parse(self, urlList):
-        for link in urlList:
+    def parse(self, urllist = None):
+        """This function does the heavy lifting.
+
+        Iterates over the `urlList`, check if link was already processed and process it
+
+        Args:
+            urllist (:obj:`list` of :obj:`str`): List of URL's to process
+        """
+        if urllist == None:
+            urllist = [self.URL]
+
+        for link in urllist:
             if not (link in self.httpList):
-                s = self.getUrlSchemeList(link)
-                l = self.getUrl(s)
+                print link
+
+                dom = self.getHtmlDom(link)
+
+                s = self.getUrlList(dom)
+                print s
+
                 # obtain external URL's
-                self.httpExtList.update(self.getExtUrl(s))
+                # self.httpList.update(self.getIntUrl(s))
+
                 # obtain Email addresses
-                self.mail.update(self.getEmail(s))
+                # self.mail.update(self.getEmail(s))
                 # print "Obtained links: " + str(l)
+
+
+
+
+                # mark link as visited
                 self.httpList.add(link)
-                self.parse(l)
+                # recursive call with list of links
+                self.parse()
 
 
-    def getUrlSchemeList(self, URL):
-        scheme = list()
+                # l = self.getUrl(s)
+                # self.parse(l)
 
-        # HTTP request
-        res = requests.get(URL)
+    def getHtmlDom(self, url):
+        """Send HTML request and process the received HTML DOM.
+
+        Args:
+            url (:obj:`str`): string of the URL
+        """
+        res = requests.get(url)
         try:
             res.raise_for_status()
         except Exception as exc:
             print('Execption: %s' % (exc))
 
-        # parse HTML
-        s = bs4.BeautifulSoup(res.text, "lxml")
+        return bs4.BeautifulSoup(res.text, "lxml")
+
+
+    def getUrlList(self, dom):
+        """Obtain every 'href' HTML tag from the HTML DOM
+
+        Args:
+            dom (:obj:`bs4.BeautifulSoup`): HTML DOM
+        """
+        l = list()
 
         # retrieve all <a> tags
-        tags = s.select('a')
-
-        for tag in tags:
+        for tag in (dom.select('a')):
             a = tag.get('href')
 
             # skip empty <a>
             if a == None:
                 continue
 
-            scheme.append (urlparse.urlparse(a))
-        return scheme
-
-    def getEmail(self, schemeList):
-        l = set()
-        for scheme in schemeList:
-            if scheme.scheme == 'mailto':
-                l.add(urlparse.urlunparse(scheme))
-                # self.mail.add(scheme.path)
+            l.append (urlparse.urlparse(a))
         return l
 
-    def getUrl(self, schemeList):
+    def getIntUrl(self, schemeList):
         l = set()
         for scheme in schemeList:
             # print "Scheme: " + str(scheme)
@@ -78,6 +120,14 @@ class Page:
         for scheme in schemeList:
             if scheme.netloc != self.BASE_URL and (scheme.scheme == 'http' or scheme.scheme == 'https'):
                 l.add(urlparse.urlunparse(scheme))
+        return l
+
+    def getEmail(self, schemeList):
+        l = set()
+        for scheme in schemeList:
+            if scheme.scheme == 'mailto':
+                l.add(urlparse.urlunparse(scheme))
+                # self.mail.add(scheme.path)
         return l
 
     def printEmails(self):
@@ -103,13 +153,12 @@ class Page:
 
 
 def main():
-    p = Page(INPUT_URL)
-    linklist = [INPUT_URL]
-    p.parse(linklist)
+    p = Crawler(INPUT_URL)
+    p.parse()
 
-    p.printVisitedLinks()
-    p.printExtLinks()
-    p.printEmails()
+    # p.printVisitedLinks()
+    # p.printExtLinks()
+    # p.printEmails()
 
     # s = p.getUrlSchemeList(INPUT_URL)
     # links = p.getUrl(s)
