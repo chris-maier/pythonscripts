@@ -18,10 +18,11 @@ import requests
 import bs4
 import urlparse
 from Queue import Queue
+from collections import Counter
 from timeit import default_timer as timer
 
-INPUT_URL = 'http://www.duerrdental.com'
-# INPUT_URL = 'http://www.bitshift-dynamics.de/'
+# INPUT_URL = 'http://www.duerrdental.com'
+INPUT_URL = 'http://www.bitshift-dynamics.de/'
 # INPUT_URL = 'http://chris-maier.com'
 
 class Crawler:
@@ -35,6 +36,7 @@ class Crawler:
         self.mail = set()
         self.httpVisited = set()
         self.httpExtList = set()
+        self.c = Counter([])
 
     def parse(self):
         """This function does the heavy lifting.
@@ -62,6 +64,11 @@ class Crawler:
             map(q.put, uniqueUrls - inQueue)
             inQueue.update(uniqueUrls)
 
+            text = dom.get_text(" ", strip=True)
+            wordList = text.split()
+            temp = Counter(wordList)
+            self.c += temp
+            print "Links: " + str(len(self.httpVisited)) + " of " + str(len(inQueue)) + " Words: " + str(len(self.c))
 
     def getHtmlDom(self, url):
         """Send HTML request and process the received HTML DOM.
@@ -109,7 +116,6 @@ class Crawler:
                 link = urlparse.urlunparse(scheme)
             else:
                 # print scheme
-                # import pdb; pdb.set_trace()
                 continue
 
             link = link.rstrip("//")
@@ -152,14 +158,18 @@ class Crawler:
             print h
         print ""
 
+    def printWordList(self):
+        print "WordList: " + str(self.c)
+
 
 def main():
     p = Crawler(INPUT_URL)
     p.parse()
 
-    # p.printVisitedLinks()
+    p.printVisitedLinks()
     # p.printExtLinks()
     # p.printEmails()
+    p.printWordList()
 
     # s = p.getUrlSchemeList(INPUT_URL)
     # links = p.getUrl(s)
