@@ -54,10 +54,6 @@ class Crawler:
             link = q.get()
             print "- " + link
 
-            if link in self.httpVisited:
-                print "+ " + link
-                continue
-
             self.httpVisited.add(link)
 
             dom = self.getHtmlDom(link)
