@@ -52,7 +52,6 @@ class Crawler:
 
         while not q.empty():
             link = q.get()
-            print "- " + link
 
             self.httpVisited.add(link)
 
@@ -63,16 +62,10 @@ class Crawler:
             map(q.put, uniqueUrls - inQueue)
             inQueue.update(uniqueUrls)
 
-            print "Queue: " + str(q.qsize())
-            print "Visited: " + str(len(self.httpVisited))
-            # print "Progress: " +
-            # TODO here we are
 
     def getHtmlDom(self, url):
         """Send HTML request and process the received HTML DOM.
 
-        TODO:
-            Needs speed up
         Args:
             url (:obj:`str`): string of the URL
         """
