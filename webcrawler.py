@@ -20,8 +20,8 @@ import urlparse
 from Queue import Queue
 from timeit import default_timer as timer
 
-# INPUT_URL = 'http://www.duerrdental.com'
-INPUT_URL = 'http://www.bitshift-dynamics.de/'
+INPUT_URL = 'http://www.duerrdental.com'
+# INPUT_URL = 'http://www.bitshift-dynamics.de/'
 # INPUT_URL = 'http://chris-maier.com'
 
 class Crawler:
@@ -29,11 +29,11 @@ class Crawler:
 
     def __init__(self, url):
         """Ctor - Setup the basic variables."""
-        self.URL = url
+        self.URL = url.rstrip("//")
         self.BASE_URL = urlparse.urlparse(url).netloc
         self.BASE_SCHEME = urlparse.urlparse(url).scheme
         self.mail = set()
-        self.httpList = set()
+        self.httpVisited = set()
         self.httpExtList = set()
 
     def parse(self):
@@ -44,7 +44,7 @@ class Crawler:
         Args:
             urllist (:obj:`list` of :obj:`str`): List of URL's to process
         """
-        intUrls = set()
+        inQueue = set()
 
         # init Queue
         q = Queue()
@@ -52,53 +52,25 @@ class Crawler:
 
         while not q.empty():
             link = q.get()
-            print link
+            print "- " + link
 
-            if link in self.httpList:
-                print "--- we've been there ---"
-                print self.httpList
-                # continue
-                break
+            if link in self.httpVisited:
+                print "+ " + link
+                continue
 
-            self.httpList.add(link)
+            self.httpVisited.add(link)
 
             dom = self.getHtmlDom(link)
             allUrls = self.getUrlList(dom)
-            intUrls = self.getIntUrl(allUrls)
-            # TODO unique URL's do not work as expected!!!
-            uniqueUrls = intUrls - self.httpList
-            map(q.put, uniqueUrls)
+            uniqueUrls = self.getIntUrl(allUrls) - self.httpVisited
 
-        ### OLD STUFF
-        # if urllist == None:
-        #     urllist = [self.URL]
+            map(q.put, uniqueUrls - inQueue)
+            inQueue.update(uniqueUrls)
 
-        # for link in urllist:
-        #     if not (link in self.httpList):
-        #         print link
-
-        #         # get the whole HTML document
-        #         dom = self.getHtmlDom(link)
-
-        #         # extract all URL's
-        #         allUrls = self.getUrlList(dom)
-
-        #         intUrls = self.getIntUrl(allUrls)
-        #         # obtain external URL's
-        #         # self.httpList.update(self.getIntUrl(s))
-
-        #         # obtain Email addresses
-        #         # self.mail.update(self.getEmail(s))
-        #         # print "Obtained links: " + str(l)
-
-        #         # mark link as visited
-        #         self.httpList.add(link)
-        #         # recursive call with list of links
-        #         self.parse(intUrls)
-
-        #         # l = self.getUrl(s)
-        #         # self.parse(l)
-        ###
+            print "Queue: " + str(q.qsize())
+            print "Visited: " + str(len(self.httpVisited))
+            print "Progress: " +
+            # TODO here we are
 
     def getHtmlDom(self, url):
         """Send HTML request and process the received HTML DOM.
@@ -146,9 +118,16 @@ class Crawler:
         for scheme in schemeList:
             if (scheme.netloc == '' and scheme.scheme == ''):
                 # prepend the BASE_URL
-                l.add(self.BASE_SCHEME + '://' + self.BASE_URL + '/' + urlparse.urlunparse(scheme))
+                link = self.BASE_SCHEME + '://' + self.BASE_URL + '/' + urlparse.urlunparse(scheme)
             elif (scheme.netloc == self.BASE_URL):
-                l.add(urlparse.urlunparse(scheme))
+                link = urlparse.urlunparse(scheme)
+            else:
+                # print scheme
+                # import pdb; pdb.set_trace()
+                continue
+
+            link = link.rstrip("//")
+            l.add(link)
         return l
 
     def getExtUrl(self, schemeList):
@@ -175,8 +154,8 @@ class Crawler:
 
     def printVisitedLinks(self):
         print "Visited HTTP Links:"
-        self.httpList = sorted(self.httpList)
-        for h in self.httpList:
+        self.httpVisited = sorted(self.httpVisited)
+        for h in self.httpVisited:
             print h
         print ""
 
