@@ -69,7 +69,7 @@ class Crawler:
 
             print "Queue: " + str(q.qsize())
             print "Visited: " + str(len(self.httpVisited))
-            print "Progress: " +
+            # print "Progress: " +
             # TODO here we are
 
     def getHtmlDom(self, url):
@@ -86,6 +86,7 @@ class Crawler:
         except Exception as exc:
             print('Execption: %s' % (exc))
 
+            # for link in soup.findAll('a', href=True, text='TEXT'):
         return bs4.BeautifulSoup(res.text, "lxml")
 
 
@@ -97,13 +98,9 @@ class Crawler:
         """
         l = set()
 
-        # retrieve all <a> tags
-        for tag in (dom.select('a')):
+        # retrieve all <a> tags with a valid href
+        for tag in dom.find_all('a', href=True):
             a = tag.get('href')
-
-            # skip empty <a>
-            if a == None:
-                continue
 
             l.add(urlparse.urlparse(a))
         return l
